@@ -29,7 +29,7 @@ function initializeGrid() {
     var row = $("<tr/>");
     var playerGridCol = [];
     for (var j = 0; j < BATTLESHIP_GRID_SIZE; j++) {
-      row.append("<td width='50' height='50' data-col=" + j + " data-row=" + i + "/>");
+      row.append("<td data-col=" + j + " data-row=" + i + "/>");
       playerGridCol.push({ship: null});
     }
     $("#battleship-grid").append(row);

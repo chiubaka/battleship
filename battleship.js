@@ -106,7 +106,7 @@ function placeShipInGrid(ship, grid) {
  * that start (col, row) is further to the top left than end (col, row) or automatically swap them
  * 3) don't allow player to place a ship such that it would overlap another ship
  */
-function playerPlaceShip(shipName, length, callback) {
+function placePlayerShip(shipName, length, callback) {
   $("#message").text("Place " + shipName + " (length " + length + ") by clicking on start point " +
     "and end point.");
   var startCol, startRow, endCol, endRow;
@@ -176,11 +176,11 @@ function play() {
  * Prompts player to place ships on the board.
  */
 function placePlayerShips() {
-  playerPlaceShip("aircraft carrier", 5, function() {
-    playerPlaceShip("battleship", 4, function() {
-      playerPlaceShip("submarine", 3, function() {
-        playerPlaceShip("destroyer", 3, function() {
-          playerPlaceShip("patrol boat", 2, play);
+  placePlayerShip("aircraft carrier", 5, function() {
+    placePlayerShip("battleship", 4, function() {
+      placePlayerShip("submarine", 3, function() {
+        placePlayerShip("destroyer", 3, function() {
+          placePlayerShip("patrol boat", 2, play);
         });
       });
     });

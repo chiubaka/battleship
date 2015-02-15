@@ -1,3 +1,7 @@
+#player-grid {
+  margin-bottom: 50px;
+}
+
 td {
   border: 1px solid black;
   width: 50px;
@@ -6,4 +10,12 @@ td {
 
 td.ship {
   background-color: gray;
+}
+
+td.hit {
+  background-color: red;
+}
+
+td.miss {
+  background-color: yellow;
 }

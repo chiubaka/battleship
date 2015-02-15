@@ -13,6 +13,7 @@ var BATTLESHIP_GRID_SIZE = 10;
  * @type {Array}
  */
 var playerShips = [];
+var aiShips = [];
 /**
  * Keeps track of the state of the player's grid. There is some duplicated info between playerShips
  * and playerGrid, but playerShips is useful to make it easy to tell which ships are left, and
@@ -20,22 +21,30 @@ var playerShips = [];
  * @type {Array}
  */
 var playerGrid = [];
+var aiGrid = [];
+var playerAttackGrid = [];
 
 /**
  * Sets up the UI grid and the internal grid model for the game.
  */
-function initializePlayerGrid() {
+function initializeGridView(gridSelector) {
   for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
     var row = $("<tr/>");
-    var playerGridCol = [];
     for (var j = 0; j < BATTLESHIP_GRID_SIZE; j++) {
       row.append("<td data-col=" + j + " data-row=" + i + "/>");
-      playerGridCol.push({ship: null});
     }
-    $("#player-grid").append(row);
-    playerGrid.push(playerGridCol);
+    gridSelector.append(row);
   }
-  playerGridCells = $("#player-grid td");
+}
+
+function initializeGridModel(grid) {
+  for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
+    var gridCol = [];
+    for (var j = 0; j < BATTLESHIP_GRID_SIZE; j++) {
+      gridCol.push({state: null});
+    }
+    grid.push(gridCol);
+  }
 }
 
 /**
@@ -78,12 +87,12 @@ function placeShipInGrid(ship, grid) {
   var startRow = ship.startRow;
   if (ship.vertical) {
     for (var row = startRow; row < startRow + ship.length; row++) {
-      grid[startCol][row].ship = ship;
+      grid[startCol][row].state = ship;
     }
   }
   else {
     for (var col = startCol; col < startCol + ship.length; col++) {
-      grid[col][startRow].ship = ship;
+      grid[col][startRow].state = ship;
     }
   }
 }
@@ -131,6 +140,38 @@ function playerPlaceShip(shipName, length, callback) {
   });
 }
 
+function placeAIShips() {
+
+}
+
+function aiTurn() {
+
+}
+
+/**
+ * Starts normal play of the game where the player and the AI take turns shooting at each other.
+ */
+function play() {
+  initializeGridView($("#player-attack-grid"));
+  playerAttackGridCells = $("#player-attack-grid td");
+  playerAttackGridCells.click(function() {
+    // If this cell already has a class, it has been clicked before so don't do anything.
+    if ($(this).hasClass("hit") || $(this).hasClass("miss")) {
+      return;
+    }
+    var col = $(this).data("col");
+    var row = $(this).data("row");
+    if (aiGrid[col][row].state === null) {
+      $(this).addClass("miss");
+    }
+    else {
+      $(this).addClass("hit");
+    }
+    aiTurn();
+  });
+  $("#message").text("Click in bottom grid to fire at a location.");
+}
+
 /**
  * Prompts player to place ships on the board.
  */
@@ -139,9 +180,7 @@ function placePlayerShips() {
     playerPlaceShip("battleship", 4, function() {
       playerPlaceShip("submarine", 3, function() {
         playerPlaceShip("destroyer", 3, function() {
-          playerPlaceShip("patrol boat", 2, function() {
-            $("#message").text("");
-          });
+          playerPlaceShip("patrol boat", 2, play);
         });
       });
     });
@@ -149,6 +188,10 @@ function placePlayerShips() {
 }
 
 $(document).ready(function() {
-  initializePlayerGrid();
+  initializeGridModel(playerGrid);
+  initializeGridModel(aiGrid);
+  initializeGridView($("#player-grid"));
+  playerGridCells = $("#player-grid td");
+  placeAIShips();
   placePlayerShips();
 });

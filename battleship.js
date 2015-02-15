@@ -24,7 +24,7 @@ var playerGrid = [];
 /**
  * Sets up the UI grid and the internal grid model for the game.
  */
-function initializeGrid() {
+function initializePlayerGrid() {
   for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
     var row = $("<tr/>");
     var playerGridCol = [];
@@ -32,10 +32,10 @@ function initializeGrid() {
       row.append("<td data-col=" + j + " data-row=" + i + "/>");
       playerGridCol.push({ship: null});
     }
-    $("#battleship-grid").append(row);
+    $("#player-grid").append(row);
     playerGrid.push(playerGridCol);
   }
-  battleshipGridCells = $("#battleship-grid td");
+  playerGridCells = $("#player-grid td");
 }
 
 /**
@@ -45,7 +45,7 @@ function initializeGrid() {
  * @returns {*|jQuery|HTMLElement}
  */
 function getGridCell(col, row) {
-  return $(battleshipGridCells[row * BATTLESHIP_GRID_SIZE + col]);
+  return $(playerGridCells[row * BATTLESHIP_GRID_SIZE + col]);
 }
 
 /**
@@ -104,7 +104,7 @@ function playerPlaceShip(shipName, length, callback) {
   var firstClick = true;
 
   // Start listening for clicks. We need two clicks to place a ship.
-  battleshipGridCells.click(function() {
+  playerGridCells.click(function() {
     var col = $(this).data("col");
     var row = $(this).data("row");
     if (firstClick) {
@@ -125,7 +125,7 @@ function playerPlaceShip(shipName, length, callback) {
       drawShip(ship);
       placeShipInGrid(ship, playerGrid);
       // Remove this click listener since we are done placing this ship.
-      battleshipGridCells.unbind("click");
+      playerGridCells.unbind("click");
       callback();
     }
   });
@@ -149,6 +149,6 @@ function placePlayerShips() {
 }
 
 $(document).ready(function() {
-  initializeGrid();
+  initializePlayerGrid();
   placePlayerShips();
 });

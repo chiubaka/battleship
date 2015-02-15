@@ -116,6 +116,7 @@ function getPlayerGridCell(col, row) {
 
 /**
  * Given a ship, calls the callback function once with each location that the ship occupies.
+ * Callback function can return true to break out early.
  * @param ship
  * @param callback
  */
@@ -191,10 +192,8 @@ function canPlaceShipInGrid(ship, grid) {
   forEachShipLocation(ship, function(location) {
     if (grid[location.col][location.row].state !== null) {
       returnValue = false;
+      return true;
     }
-
-    // Return true to break out of forEachShipLocation early.
-    return true;
   });
 
   return returnValue;
@@ -204,7 +203,6 @@ function canPlaceShipInGrid(ship, grid) {
  * Places a ship in the given grid model.
  * @param ship
  * @param grid
- * @todo Consider combining this with the drawShip() function.
  */
 function placeShipInGrid(ship, grid) {
   forEachShipLocation(ship, function(location) {
@@ -246,6 +244,14 @@ function placePlayerShip(shipName, length, callback) {
         hits: 0,
         vertical: startCol === endCol
       };
+
+      // If the player has made a selection which would not result in placing the ship in the grid,
+      // do nothing and let the player reselect.
+      if (!canPlaceShipInGrid(ship, playerGrid)) {
+        firstClick = true;
+        return;
+      }
+
       playerShips.push(ship);
       drawShip(ship);
       placeShipInGrid(ship, playerGrid);

@@ -9,13 +9,28 @@
 var BATTLESHIP_GRID_SIZE = 10;
 
 /**
- * Stores objects which represent the player's ships.
- * @type {Array}
+ * A list of the player's ship objects. Not currently used in any kind of clever way, but could be
+ * used so that the AI can heuristically not shoot at locations where there is not enough space for
+ * a remaining player ship. However, since this logic is not learning, per se, I didn't focus my
+ * time on it.
  */
 var playerShips;
+/**
+ * Keeps track of the number of player ships that still have life.
+ */
 var playerShipsRemaining;
+/**
+ * Keeps track of the locations where the player places ships across games.
+ */
 var playerShipsHistogram;
+/**
+ * Keeps track of the locations where the player attacks across games. Currently not used to do
+ * anything clever with the AI, but could be used to smartly place the AI's ships on the board.
+ */
 var playerAttacksHistogram;
+/**
+ * A list of the AI's ship objects.
+ */
 var aiShips;
 var aiShipsRemaining;
 /**
@@ -25,8 +40,15 @@ var aiShipsRemaining;
  * @type {Array}
  */
 var playerGrid = [];
+/**
+ * Keeps track of the state of the AI's grid and where its ships are placed.
+ * @type {Array}
+ */
 var aiGrid = [];
-var aiAttackGrid = [];
+/**
+ * A weighted grid that helps the AI determine which locations are of highest value.
+ */
+var aiAttackGrid;
 
 /**
  * Sets up the UI grid and the internal grid model for the game.
@@ -42,6 +64,12 @@ function initializeGridView(gridSelector) {
   }
 }
 
+/**
+ * Returns a grid that is BATTLESHIP_GRID_SIZE x BATTLESHIP_GRID_SIZE with the given initialValue
+ * as the value in each grid location.
+ * @param initialValue
+ * @returns {Array}
+ */
 function initializeGridModel(initialValue) {
   var grid = [];
   for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
@@ -54,12 +82,19 @@ function initializeGridModel(initialValue) {
   return grid;
 }
 
+/**
+ * Ends the game and displays a message. Shows the play again button.
+ * @param message
+ */
 function gameOver(message) {
   $("#message").text("Game over. " + message);
   $("#play-again-button").show();
   $("td").unbind("click");
 }
 
+/**
+ * Checks to see if the game is over.
+ */
 function checkForGameOver() {
   if (aiShipsRemaining === 0) {
     gameOver("You win!");
@@ -79,6 +114,11 @@ function getPlayerGridCell(col, row) {
   return $(playerGridCells[row * BATTLESHIP_GRID_SIZE + col]);
 }
 
+/**
+ * Given a ship, calls the callback function once with each location that the ship occupies.
+ * @param ship
+ * @param callback
+ */
 function forEachShipLocation(ship, callback) {
   var locations = locationsForShip(ship);
 
@@ -90,6 +130,11 @@ function forEachShipLocation(ship, callback) {
   }
 }
 
+/**
+ * Given a ship, returns a list of all of the board locations that ship occupies.
+ * @param ship
+ * @returns {Array}
+ */
 function locationsForShip(ship) {
   var locations = [];
   var startCol = ship.startCol;
@@ -257,6 +302,9 @@ function placeAIShips() {
   placeAIShip(2);
 }
 
+/**
+ * Figures out what location the AI should attack.
+ */
 function aiTurn() {
   var maxValue = 0;
   var maxLocations = [];
@@ -370,6 +418,9 @@ function updatePlayerShipsHistogram(ship) {
   });
 }
 
+/**
+ * Resets the game so that it can be played from the beginning.
+ */
 function resetGame() {
   playerShipsRemaining = 5;
   aiShipsRemaining = 5;

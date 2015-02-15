@@ -53,7 +53,7 @@ function initializeGridModel(grid, initialValue) {
  * @param row
  * @returns {*|jQuery|HTMLElement}
  */
-function getGridCell(col, row) {
+function getPlayerGridCell(col, row) {
   return $(playerGridCells[row * BATTLESHIP_GRID_SIZE + col]);
 }
 
@@ -66,12 +66,12 @@ function drawShip(ship) {
   var startRow = ship.startRow;
   if (ship.vertical) {
     for (var row = startRow; row < startRow + ship.length; row++) {
-      getGridCell(startCol, row).removeClass().addClass("ship");
+      getPlayerGridCell(startCol, row).removeClass().addClass("ship");
     }
   }
   else {
     for (var col = startCol; col < startCol + ship.length; col++) {
-      getGridCell(col, startRow).removeClass().addClass("ship");
+      getPlayerGridCell(col, startRow).removeClass().addClass("ship");
     }
   }
 }
@@ -227,7 +227,41 @@ function placeAIShips() {
 }
 
 function aiTurn() {
+  var maxValue = 0;
+  var maxLocations = [];
+  for (var col = 0; col < BATTLESHIP_GRID_SIZE; col++) {
+    for (var row = 0; row < BATTLESHIP_GRID_SIZE; row++) {
+      var value = aiAttackGrid[col][row].state;
 
+      if (value > maxValue) {
+        maxValue = value;
+        maxLocations = [{col: col, row: row}];
+      }
+      else if (value === maxValue) {
+        maxLocations.push({col: col, row: row});
+      }
+    }
+  }
+
+  // Nothing to do if maximum value is 0. Actually, this would probably be a bug!
+  if (maxValue === 0) {
+    console.warn("Maximum value on AI turn was 0.");
+    return;
+  }
+
+  // Randomly retrieve one of the best locations to attack.
+  var index = getRandomInt(0, maxLocations.length - 1);
+  var locationToAttack = maxLocations[index];
+
+  // Since we've already attacked this location, 0 out its value so that it can't be attacked again.
+  aiAttackGrid[locationToAttack.col][locationToAttack.row].state = 0;
+
+  if (playerGrid[locationToAttack.col][locationToAttack.row].state !== null) {
+    getPlayerGridCell(locationToAttack.col, locationToAttack.row).removeClass().addClass("hit");
+  }
+  else {
+    getPlayerGridCell(locationToAttack.col, locationToAttack.row).addClass("miss");
+  }
 }
 
 /**

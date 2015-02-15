@@ -22,7 +22,7 @@ var aiShips = [];
  */
 var playerGrid = [];
 var aiGrid = [];
-var playerAttackGrid = [];
+var aiAttackGrid = [];
 
 /**
  * Sets up the UI grid and the internal grid model for the game.
@@ -37,11 +37,11 @@ function initializeGridView(gridSelector) {
   }
 }
 
-function initializeGridModel(grid) {
+function initializeGridModel(grid, initialValue) {
   for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
     var gridCol = [];
     for (var j = 0; j < BATTLESHIP_GRID_SIZE; j++) {
-      gridCol.push({state: null});
+      gridCol.push({state: initialValue});
     }
     grid.push(gridCol);
   }
@@ -74,6 +74,48 @@ function drawShip(ship) {
       getGridCell(col, startRow).removeClass().addClass("ship");
     }
   }
+}
+
+/**
+ * Determines whether or not a given ship can be placed in the given grid.
+ * @param ship
+ * @param grid
+ * @returns {boolean}
+ */
+function canPlaceShipInGrid(ship, grid) {
+  var startCol = ship.startCol;
+  var startRow = ship.startRow;
+  var length = ship.length;
+  var vertical = ship.vertical;
+
+  // Ships can't start off the grid to the top or to the left.
+  if (ship.startCol < 0 || ship.startRow < 0) {
+    return false;
+  }
+
+  // Ships can't go off the end of the grid to the right or the bottom.
+  if ((!vertical && startCol + length > BATTLESHIP_GRID_SIZE)
+    || (vertical && startRow + length > BATTLESHIP_GRID_SIZE)) {
+    return false;
+  }
+
+  // Check if any of the spaces we want to occupy are already occupied.
+  if (vertical) {
+    for (var row = startRow; row < startRow + length; row++) {
+      if (grid[startCol][row].state !== null) {
+        return false;
+      }
+    }
+  }
+  else {
+    for (var col = startCol; col < startCol + length; col++) {
+      if (grid[col][startRow].state !== null) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -140,8 +182,48 @@ function placePlayerShip(shipName, length, callback) {
   });
 }
 
-function placeAIShips() {
+/**
+ * I always have to look this one up. Found this here:
+ * http://stackoverflow.com/questions/1527803/generating-random-numbers-in-javascript-in-a-specific-range
+ * @param min
+ * @param max
+ * @returns {*}
+ */
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
+/**
+ * Places an AI ship with the given length on the board. This function does random placement.
+ * @param length
+ */
+function placeAIShip(length) {
+  var ship = {
+    startCol: getRandomInt(0, BATTLESHIP_GRID_SIZE - 1),
+    startRow: getRandomInt(0, BATTLESHIP_GRID_SIZE - 1),
+    length: length,
+    vertical: getRandomInt(0, 1) === 1
+  };
+
+  while (!canPlaceShipInGrid(ship, aiGrid)) {
+    ship.startCol = getRandomInt(0, BATTLESHIP_GRID_SIZE - 1);
+    ship.startRow = getRandomInt(0, BATTLESHIP_GRID_SIZE - 1);
+    ship.vertical = getRandomInt(0, 1) === 1;
+  }
+
+  placeShipInGrid(ship, aiGrid);
+  aiShips.push(ship);
+}
+
+/**
+ * Places AI ships on the board.
+ */
+function placeAIShips() {
+  placeAIShip(5);
+  placeAIShip(4);
+  placeAIShip(3);
+  placeAIShip(3);
+  placeAIShip(2);
 }
 
 function aiTurn() {
@@ -188,8 +270,9 @@ function placePlayerShips() {
 }
 
 $(document).ready(function() {
-  initializeGridModel(playerGrid);
-  initializeGridModel(aiGrid);
+  initializeGridModel(playerGrid, null);
+  initializeGridModel(aiGrid, null);
+  initializeGridModel(aiAttackGrid, 1);
   initializeGridView($("#player-grid"));
   playerGridCells = $("#player-grid td");
   placeAIShips();

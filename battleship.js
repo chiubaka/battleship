@@ -12,8 +12,12 @@ var BATTLESHIP_GRID_SIZE = 10;
  * Stores objects which represent the player's ships.
  * @type {Array}
  */
-var playerShips = [];
-var aiShips = [];
+var playerShips;
+var playerShipsRemaining;
+var playerShipsHistogram;
+var playerAttacksHistogram;
+var aiShips;
+var aiShipsRemaining;
 /**
  * Keeps track of the state of the player's grid. There is some duplicated info between playerShips
  * and playerGrid, but playerShips is useful to make it easy to tell which ships are left, and
@@ -28,6 +32,7 @@ var aiAttackGrid = [];
  * Sets up the UI grid and the internal grid model for the game.
  */
 function initializeGridView(gridSelector) {
+  gridSelector.empty();
   for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
     var row = $("<tr/>");
     for (var j = 0; j < BATTLESHIP_GRID_SIZE; j++) {
@@ -37,13 +42,30 @@ function initializeGridView(gridSelector) {
   }
 }
 
-function initializeGridModel(grid, initialValue) {
+function initializeGridModel(initialValue) {
+  var grid = [];
   for (var i = 0; i < BATTLESHIP_GRID_SIZE; i++) {
     var gridCol = [];
     for (var j = 0; j < BATTLESHIP_GRID_SIZE; j++) {
       gridCol.push({state: initialValue});
     }
     grid.push(gridCol);
+  }
+  return grid;
+}
+
+function gameOver(message) {
+  $("#message").text("Game over. " + message);
+  $("#play-again-button").show();
+  $("td").unbind("click");
+}
+
+function checkForGameOver() {
+  if (aiShipsRemaining === 0) {
+    gameOver("You win!");
+  }
+  else if (playerShipsRemaining === 0) {
+    gameOver("You lose.");
   }
 }
 
@@ -57,23 +79,44 @@ function getPlayerGridCell(col, row) {
   return $(playerGridCells[row * BATTLESHIP_GRID_SIZE + col]);
 }
 
+function forEachShipLocation(ship, callback) {
+  var locations = locationsForShip(ship);
+
+  for (var i = 0; i < locations.length; i++) {
+    var location = locations[i];
+    if (callback(location)) {
+      break;
+    }
+  }
+}
+
+function locationsForShip(ship) {
+  var locations = [];
+  var startCol = ship.startCol;
+  var startRow = ship.startRow;
+  var length = ship.length;
+  if (ship.vertical) {
+    for (var row = startRow; row < startRow + length; row++) {
+      locations.push({col: startCol, row: row});
+    }
+  }
+  else {
+    for (var col = startCol; col < startCol + length; col++) {
+      locations.push({col: col, row: startRow});
+    }
+  }
+
+  return locations;
+}
+
 /**
  * Updates the UI to display the given ship.
  * @param ship
  */
 function drawShip(ship) {
-  var startCol = ship.startCol;
-  var startRow = ship.startRow;
-  if (ship.vertical) {
-    for (var row = startRow; row < startRow + ship.length; row++) {
-      getPlayerGridCell(startCol, row).removeClass().addClass("ship");
-    }
-  }
-  else {
-    for (var col = startCol; col < startCol + ship.length; col++) {
-      getPlayerGridCell(col, startRow).removeClass().addClass("ship");
-    }
-  }
+  forEachShipLocation(ship, function(location) {
+    getPlayerGridCell(location.col, location.row).removeClass().addClass("ship");
+  });
 }
 
 /**
@@ -99,23 +142,17 @@ function canPlaceShipInGrid(ship, grid) {
     return false;
   }
 
-  // Check if any of the spaces we want to occupy are already occupied.
-  if (vertical) {
-    for (var row = startRow; row < startRow + length; row++) {
-      if (grid[startCol][row].state !== null) {
-        return false;
-      }
+  var returnValue = true;
+  forEachShipLocation(ship, function(location) {
+    if (grid[location.col][location.row].state !== null) {
+      returnValue = false;
     }
-  }
-  else {
-    for (var col = startCol; col < startCol + length; col++) {
-      if (grid[col][startRow].state !== null) {
-        return false;
-      }
-    }
-  }
 
-  return true;
+    // Return true to break out of forEachShipLocation early.
+    return true;
+  });
+
+  return returnValue;
 }
 
 /**
@@ -125,18 +162,9 @@ function canPlaceShipInGrid(ship, grid) {
  * @todo Consider combining this with the drawShip() function.
  */
 function placeShipInGrid(ship, grid) {
-  var startCol = ship.startCol;
-  var startRow = ship.startRow;
-  if (ship.vertical) {
-    for (var row = startRow; row < startRow + ship.length; row++) {
-      grid[startCol][row].state = ship;
-    }
-  }
-  else {
-    for (var col = startCol; col < startCol + ship.length; col++) {
-      grid[col][startRow].state = ship;
-    }
-  }
+  forEachShipLocation(ship, function(location) {
+    grid[location.col][location.row].state = ship;
+  });
 }
 
 /**
@@ -170,11 +198,13 @@ function placePlayerShip(shipName, length, callback) {
         startCol: startCol,
         startRow: startRow,
         length: length,
+        hits: 0,
         vertical: startCol === endCol
       };
       playerShips.push(ship);
       drawShip(ship);
       placeShipInGrid(ship, playerGrid);
+      updatePlayerShipsHistogram(ship);
       // Remove this click listener since we are done placing this ship.
       playerGridCells.unbind("click");
       callback();
@@ -202,6 +232,7 @@ function placeAIShip(length) {
     startCol: getRandomInt(0, BATTLESHIP_GRID_SIZE - 1),
     startRow: getRandomInt(0, BATTLESHIP_GRID_SIZE - 1),
     length: length,
+    hits: 0,
     vertical: getRandomInt(0, 1) === 1
   };
 
@@ -258,6 +289,12 @@ function aiTurn() {
 
   if (playerGrid[locationToAttack.col][locationToAttack.row].state !== null) {
     getPlayerGridCell(locationToAttack.col, locationToAttack.row).removeClass().addClass("hit");
+    var ship = playerGrid[locationToAttack.col][locationToAttack.row].state;
+    ship.hits++;
+    if (ship.hits === ship.length) {
+      playerShipsRemaining--;
+      checkForGameOver();
+    }
   }
   else {
     getPlayerGridCell(locationToAttack.col, locationToAttack.row).addClass("miss");
@@ -277,11 +314,18 @@ function play() {
     }
     var col = $(this).data("col");
     var row = $(this).data("row");
+    playerAttacksHistogram[col][row].state += 1;
     if (aiGrid[col][row].state === null) {
       $(this).addClass("miss");
     }
     else {
       $(this).addClass("hit");
+      var ship = aiGrid[col][row].state;
+      ship.hits++;
+      if (ship.hits === ship.length) {
+        aiShipsRemaining--;
+        checkForGameOver();
+      }
     }
     aiTurn();
   });
@@ -303,12 +347,49 @@ function placePlayerShips() {
   });
 }
 
-$(document).ready(function() {
-  initializeGridModel(playerGrid, null);
-  initializeGridModel(aiGrid, null);
-  initializeGridModel(aiAttackGrid, 1);
+/**
+ * Updates the AI attack grid weights based on the frequency with which the player has place his/her
+ * ships in locations on the board.
+ */
+function updateAiAttackGrid() {
+  for (var col = 0; col < BATTLESHIP_GRID_SIZE; col++) {
+    for (var row = 0; row < BATTLESHIP_GRID_SIZE; row++) {
+      aiAttackGrid[col][row].state += playerShipsHistogram[col][row].state;
+    }
+  }
+}
+
+/**
+ * Adds one to the frequency of every grid space that the given ship occupies. This way the AI
+ * is more likely to attack these locations.
+ * @param ship
+ */
+function updatePlayerShipsHistogram(ship) {
+  forEachShipLocation(ship, function(location) {
+    playerShipsHistogram[location.col][location.row].state += 1;
+  });
+}
+
+function resetGame() {
+  playerShipsRemaining = 5;
+  aiShipsRemaining = 5;
+  playerShips = [];
+  aiShips = [];
+  playerGrid = initializeGridModel(null);
+  aiGrid = initializeGridModel(null);
+  aiAttackGrid = initializeGridModel(1);
+  updateAiAttackGrid();
   initializeGridView($("#player-grid"));
+  $("#play-again-button").hide();
+  $("#player-attack-grid").empty();
   playerGridCells = $("#player-grid td");
   placeAIShips();
   placePlayerShips();
+}
+
+$(document).ready(function() {
+  playerAttacksHistogram = initializeGridModel(0);
+  playerShipsHistogram = initializeGridModel(0);
+  $("#play-again-button").click(resetGame);
+  resetGame();
 });

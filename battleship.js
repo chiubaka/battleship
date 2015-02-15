@@ -215,9 +215,6 @@ function placeShipInGrid(ship, grid) {
  * @param shipName
  * @param length
  * @param callback
- * @todo Error checking: 1) don't allow player to click on things that are not in a line 2) enforce
- * that start (col, row) is further to the top left than end (col, row) or automatically swap them
- * 3) don't allow player to place a ship such that it would overlap another ship
  */
 function placePlayerShip(shipName, length, callback) {
   $("#message").text("Place " + shipName + " (length " + length + ") by clicking on start point " +
@@ -237,6 +234,23 @@ function placePlayerShip(shipName, length, callback) {
     else {
       endCol = col;
       endRow = row;
+
+      // If the player has made a selection which is not a line, ask the player to reselect.
+      if (!(startCol === endCol || startRow === endRow)) {
+        firstClick = true;
+        return;
+      }
+
+      // Switch start and end points if end point is to the top left of the start point.
+      if (endCol < startCol || endRow < startRow) {
+        var tempCol = startCol;
+        var tempRow = startRow;
+        startRow = endRow;
+        startCol = endCol;
+        endCol = tempCol;
+        endRow = tempRow;
+      }
+
       var ship = {
         startCol: startCol,
         startRow: startRow,
@@ -251,6 +265,8 @@ function placePlayerShip(shipName, length, callback) {
         firstClick = true;
         return;
       }
+
+
 
       playerShips.push(ship);
       drawShip(ship);

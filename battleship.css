@@ -1,3 +1,7 @@
 #battleship-grid td {
   border: 1px solid black;
 }
+
+#battleship-grid td.ship {
+  background-color: gray;
+}

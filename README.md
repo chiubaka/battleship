@@ -1,4 +1,4 @@
-# battleship
+# Battleship
 Web-based battleship game with AI made as a coding exercise for PicnicHealth.
 
 ## Approach
@@ -12,8 +12,12 @@ Web-based battleship game with AI made as a coding exercise for PicnicHealth.
 6. Add game over condition
 7. Work on smarter AI implementation based on better heuristics
 
-## AI Research
-* Reinforcement learning?
+## AI
+### Implementation
+* The battleship AI here learns from the player's past actions. It makes the assumption that the past may help to predict the future. This seems to be a reasonable guess because humans do not act 100% randomly, so overtime the Ai should be able to figure out what the human's natural tendencies are and gain an advantage as a result.
+    * In particular, the AI records where the player has placed ships in the past so it knows how likely it is for the player to place a ship at a given location
+    * The AI also records where the player attacks and when so that it can figure out which spaces it should place ships in to maximize the amount of time the player is likely to take to find the AI's ships.
+### Reinforcement learning?
 * Model opponent's grid as a field of probabilities of where ships might be. Initially, even chance of ships being in every square. As we gain more information, can refine probabilities. Always shoot at one of the squares that has the highest probability.
 * Playing against single person over and over again, so can compute statistics about where they typically place ships and preferentially shoot at those locations
 * When a ship is hit, the probability that the spaces around it contain ships should increase.
@@ -22,8 +26,15 @@ Web-based battleship game with AI made as a coding exercise for PicnicHealth.
 * Areas that could contain multiple of the remaining ships should have higher than normal probability
 * Flipside is to figure out where opponent is more likely to shoot, and place ships away from those locations
 * Rather than hand-tuning probabilities, is there a way I can get the AI to just learn them automatically using some sort of statistical learning?
-* 
 
-### References
-* ### http://stackoverflow.com/questions/1631414/what-is-the-best-battleship-ai
+#### References
+* http://stackoverflow.com/questions/1631414/what-is-the-best-battleship-ai
     * Ignored code on this page
+
+## Future Work
+* Weight spaces next to a hit slightly higher since knowing that you hit a ship gives you information about the squares around that space
+* Have the AI figure out which pockets and areas are more or less likely based on the length of the player's remaining ships and prioritize hitting spaces where things are likely to be more valuable
+* Perhaps heuristically change AI placement so that situations like ships being placed close together are less likely to occur
+* When doing placement of AI ships, consider global combinations of placements rather than placing each ship greedily and individually
+* Randomize the AI a little bit so that it isn't predictable to the point where it is gameable
+    * E.g. with 90% probability, the AI will do something based on history, but with 10% probability the AI will do something completely random. Otherwise an observant player can figure out what the AI is doing and completely game it.

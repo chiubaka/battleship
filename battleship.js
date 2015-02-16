@@ -20,6 +20,13 @@ var playerShips;
  */
 var playerShipsRemaining;
 /**
+ * Keeps track of the number of additional moves possible for the player. This helps to discount the
+ * the player's moves so that the AI takes into account not only which squares the player is more
+ * likely to click, but also which squares the player is more likely to click earlier vs. later in
+ * the game.
+ */
+var possibleMovesRemaining;
+/**
  * Keeps track of the locations where the player places ships across games.
  */
 var playerShipsHistogram;
@@ -294,7 +301,7 @@ function getRandomInt(min, max) {
  * Places an AI ship with the given length on the board. This function does random placement.
  * @param length
  */
-function placeAIShip(length) {
+/*function placeAIShip(length) {
   var ship = {
     startCol: getRandomInt(0, BATTLESHIP_GRID_SIZE - 1),
     startRow: getRandomInt(0, BATTLESHIP_GRID_SIZE - 1),
@@ -307,6 +314,86 @@ function placeAIShip(length) {
     ship.startCol = getRandomInt(0, BATTLESHIP_GRID_SIZE - 1);
     ship.startRow = getRandomInt(0, BATTLESHIP_GRID_SIZE - 1);
     ship.vertical = getRandomInt(0, 1) === 1;
+  }
+
+  placeShipInGrid(ship, aiGrid);
+  aiShips.push(ship);
+}*/
+
+/**
+ *
+ * @param length
+ * @todo Considering each ship independently is greedy. Can probably get a better global placement
+ * by considering ships together, but even this much will help the AI to "learn."
+ */
+function placeAIShip(length) {
+  var minimum = Number.MAX_VALUE;
+  var vertical = false;
+  var placementLocation = {col: 0, row: 0};
+  // Find a contiguous set of locations that has the given length and has the minimum combined sum.
+  // Loop over each location in the grid, and try the contiguous set of locations that starts
+  // vertically and horizontally from that location.
+  for (var col = 0; col < BATTLESHIP_GRID_SIZE; col++) {
+    for (var row = 0; row < BATTLESHIP_GRID_SIZE; row++) {
+      var colSum = 0;
+      var colOverlaps = false;
+      var rowSum = 0;
+      var rowOverlaps = false;
+      for (var distance = 0; distance < length; distance++) {
+        // If this configuration would go off the edge of the grid, stop considering it.
+        if (col + distance >= BATTLESHIP_GRID_SIZE || rowOverlaps) {
+          rowSum = Number.MAX_VALUE;
+        }
+        else {
+          rowSum += playerAttacksHistogram[col + distance][row].state;
+          // If this configuration would overlap another ship, stop considering it.
+          if (aiGrid[col + distance][row].state !== null) {
+            rowOverlaps = true;
+            rowSum = Number.MAX_VALUE;
+          }
+        }
+
+        // If this configuration would go off the edge of the grid, stop considering it.
+        if (row + distance >= BATTLESHIP_GRID_SIZE || colOverlaps) {
+          colSum = Number.MAX_VALUE;
+        }
+        else {
+          colSum += playerAttacksHistogram[col][row + distance].state;
+          // If this configuration would overlap another ship, stop considering it.
+          if (aiGrid[col][row + distance].state !== null) {
+            colOverlaps = true;
+            colSum = Number.MAX_VALUE;
+          }
+        }
+      }
+
+      if (rowSum < minimum) {
+        minimum = rowSum;
+        vertical = false;
+        placementLocation.col = col;
+        placementLocation.row = row;
+      }
+
+      if (colSum < minimum) {
+        minimum = colSum;
+        vertical = true;
+        placementLocation.col = col;
+        placementLocation.row = row;
+      }
+    }
+  }
+
+  var ship = {
+    startCol: placementLocation.col,
+    startRow: placementLocation.row,
+    length: length,
+    hits: 0,
+    vertical: vertical
+  };
+
+  if (!canPlaceShipInGrid(ship, aiGrid)) {
+    console.warn("Invalid ship placement for AI!");
+    console.log(ship);
   }
 
   placeShipInGrid(ship, aiGrid);
@@ -384,7 +471,8 @@ function play() {
     }
     var col = $(this).data("col");
     var row = $(this).data("row");
-    playerAttacksHistogram[col][row].state += 1;
+    playerAttacksHistogram[col][row].state += possibleMovesRemaining;
+    possibleMovesRemaining--;
     if (aiGrid[col][row].state === null) {
       $(this).addClass("miss");
     }
@@ -446,6 +534,7 @@ function updatePlayerShipsHistogram(ship) {
 function resetGame() {
   playerShipsRemaining = 5;
   aiShipsRemaining = 5;
+  possibleMovesRemaining = BATTLESHIP_GRID_SIZE * BATTLESHIP_GRID_SIZE;
   playerShips = [];
   aiShips = [];
   playerGrid = initializeGridModel(null);

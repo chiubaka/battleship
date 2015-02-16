@@ -329,6 +329,7 @@ function getRandomInt(min, max) {
 function placeAIShip(length) {
   var minimum = Number.MAX_VALUE;
   var vertical = false;
+  var possiblePlacements = [];
   var placementLocation = {col: 0, row: 0};
   // Find a contiguous set of locations that has the given length and has the minimum combined sum.
   // Loop over each location in the grid, and try the contiguous set of locations that starts
@@ -369,26 +370,30 @@ function placeAIShip(length) {
 
       if (rowSum < minimum) {
         minimum = rowSum;
-        vertical = false;
-        placementLocation.col = col;
-        placementLocation.row = row;
+        possiblePlacements = [{col: col, row: row, vertical: false}];
+      }
+      else if (rowSum === minimum) {
+        possiblePlacements.push({col: col, row: row, vertical: false});
       }
 
       if (colSum < minimum) {
         minimum = colSum;
-        vertical = true;
-        placementLocation.col = col;
-        placementLocation.row = row;
+        possiblePlacements = [{col: col, row: row, vertical: true}];
+      }
+      else if (colSum === minimum) {
+        possiblePlacements.push({col: col, row: row, vertical: true});
       }
     }
   }
 
+  var index = getRandomInt(0, possiblePlacements.length - 1);
+
   var ship = {
-    startCol: placementLocation.col,
-    startRow: placementLocation.row,
+    startCol: possiblePlacements[index].col,
+    startRow: possiblePlacements[index].row,
     length: length,
     hits: 0,
-    vertical: vertical
+    vertical: possiblePlacements[index].vertical
   };
 
   if (!canPlaceShipInGrid(ship, aiGrid)) {
